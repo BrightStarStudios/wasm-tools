@@ -1,0 +1,20 @@
+  types                                  |        0xb -     0x10dd |      4306 bytes | 395 count
+  imports                                |     0x10e0 -     0x4acc |     14828 bytes | 477 count
+  functions                              |     0x4ad0 -    0x166c4 |     72692 bytes | 72353 count
+  tables                                 |    0x166c6 -    0x166cf |         9 bytes | 1 count
+  globals                                |    0x166d1 -    0x16711 |        64 bytes | 12 count
+  exports                                |    0x16714 -    0x16bd1 |      1213 bytes | 54 count
+  start                                  |    0x16bd3 -    0x16bd5 |         2 bytes | 1 count
+  elements                               |    0x16bd9 -    0x34688 |    121519 bytes | 1 count
+  data count                             |    0x3468a -    0x3468c |         2 bytes | 1 count
+  code                                   |    0x34691 -  0x1042bec |  16835931 bytes | 72353 count
+  data                                   |  0x1042bf0 -  0x11594b5 |   1140933 bytes | 246 count
+  custom "name"                          |  0x11594bf -  0x1bae85d |  10834846 bytes | 1 count
+  custom ".debug_info"                   |  0x1bae86d -  0x1cf5f5f |   1341170 bytes | 1 count
+  custom ".debug_loc"                    |  0x1cf5f6e -  0x1d6141d |    439471 bytes | 1 count
+  custom ".debug_ranges"                 |  0x1d6142f -  0x1d71b8f |     67424 bytes | 1 count
+  custom ".debug_abbrev"                 |  0x1d71ba1 -  0x1d8d508 |    112999 bytes | 1 count
+  custom ".debug_line"                   |  0x1d8d518 -  0x1e21f84 |    608876 bytes | 1 count
+  custom ".debug_str"                    |  0x1e21f93 -  0x1eadc6e |    572635 bytes | 1 count
+  custom "build_id"                      |  0x1eadc79 -  0x1eadc89 |        16 bytes | 1 count
+  custom "external_debug_info"           |  0x1eadc9f -  0x1eadcb0 |        17 bytes | 1 count
