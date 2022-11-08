@@ -3,7 +3,7 @@ use regex::Regex;
 use std::{io::Write, fmt};
 use std::ops::Range;
 use std::collections::HashMap;
-use wasmparser::{Encoding, Parser, Payload::*, SectionReader, ValType, SectionWithLimitedItems};
+use wasmparser::{Encoding, Parser, Payload::*, SectionReader, ValType, SectionWithLimitedItems, Operator};
 
 /// Dumps information about sections in a WebAssembly file.
 ///
@@ -18,8 +18,8 @@ pub struct Opts {
 #[derive(Clone, Copy)]
 pub struct FunctionInfo {
     id: u32,
-    callCount: u32,
-    byteSize: usize,
+    call_count: u32,
+    byte_size: usize,
 }
 
 impl Opts {
@@ -32,10 +32,10 @@ impl Opts {
         };
         printer.indices.push(IndexSpace::default());
 
-        let mut function_info = Vec::new();
+        let mut functions_info = Vec::new();
         // let mut functionInfoMap = HashMap::new();
-        let mut function_names_map = HashMap::new();
-        let mut type_names_map = HashMap::new();
+        let mut functions_name_map = HashMap::new();
+        let mut types_name_map = HashMap::new();
         let mut code_section_counter = 0;
 
         for payload in Parser::new(0).parse_all(&input) {
@@ -55,13 +55,13 @@ impl Opts {
                     println!("Function section. Has: {} count", s.get_count());
                     for _ in 0..s.get_count() {
                         let id = s.read()?;
-                        function_info.push(FunctionInfo{ id: id, callCount: 0, byteSize: 0 });
+                        functions_info.push(FunctionInfo{ id: id, call_count: 0, byte_size: 0 });
                     }
                     if !s.eof() {
                         bail!("too many bytes in section");
                     }
 
-                    println!("Unique func signatures: {} - Duplicate function signatures {}", function_info.len(), already_owned_count);
+                    println!("Unique func signatures: {} - Duplicate function signatures {}", functions_info.len(), already_owned_count);
 
                     printer.section(s, "functions")?
                 },
@@ -109,7 +109,33 @@ impl Opts {
                     printer.section_raw(range, count, "code")?
                 }
                 CodeSectionEntry(mut s) => {
-                    function_info[code_section_counter].byteSize = s.range().end - s.range().start;
+                    functions_info[code_section_counter].byte_size = s.range().end - s.range().start;
+
+                    let mut reader = s.get_operators_reader()?;
+
+                    while true {
+                        let read = reader.read_with_offset();
+                        match read {
+                            Ok(val) => {
+                                match val.0 {
+                                    Operator::Call { function_index } => {
+                                        if function_index as usize >= functions_info.len() {
+                                            println!("Invalid function call??: {} (skipped)", function_index);
+                                            continue;
+                                        }
+
+                                        functions_info[function_index as usize].call_count += 1;
+                                    },
+                                    _ => {}
+                                }
+                            },
+                            Err(_) => {
+                                // println!("Reached end of reader...? err: {}", err.message());
+                                break;
+                            },
+                        }
+                    }
+
                     code_section_counter += 1;
                 }
 
@@ -161,11 +187,11 @@ impl Opts {
                                 wasmparser::Name::Function(mut n) => {
                                     for _ in 0..n.get_count() {
                                         let item = n.read()?;
-                                        if function_names_map.contains_key(&item.index) {
+                                        if functions_name_map.contains_key(&item.index) {
                                             bail!("function name already in lookup");
                                         }
 
-                                        function_names_map.insert(item.index, item.name);
+                                        functions_name_map.insert(item.index, item.name);
                                     }
                                     if !n.eof() {
                                         bail!("too many bytes in section");
@@ -180,11 +206,11 @@ impl Opts {
                                 wasmparser::Name::Type(mut n) => {
                                     for _ in 0..n.get_count() {
                                         let item = n.read()?;
-                                        if type_names_map.contains_key(&item.index) {
+                                        if types_name_map.contains_key(&item.index) {
                                             bail!("type name already in lookup");
                                         }
 
-                                        type_names_map.insert(item.index, item.name);
+                                        types_name_map.insert(item.index, item.name);
                                     }
                                     if !n.eof() {
                                         bail!("too many bytes in section");
@@ -230,6 +256,10 @@ impl Opts {
         }
 
 
+        if functions_name_map.len() == 0 {
+            bail!("Can only parse wasm files with custom 'name' section. Make sure the wasm has debug names in the file.");
+        }
+
         let mut funcs_by_namespace = HashMap::new();
         funcs_by_namespace.insert("non_namespaced", Vec::new());
 
@@ -269,23 +299,38 @@ impl Opts {
             }
         }
 
+        let mut called_funcs_count = 0;
+        let mut uncalled_funcs_count = 0;
+        for index in 0..functions_info.len() {
+            let info = &functions_info[index];
+
+            if info.call_count > 0 {
+                called_funcs_count += 1;
+            } else {
+                uncalled_funcs_count += 1;
+            }
+        }
+
+        println!("Called funcs: {}, uncalled funcs: {}", called_funcs_count, uncalled_funcs_count);
+
+
         let mut namespaces_ordered : Vec<(&&str, &Vec<FunctionInfo>)> = funcs_by_namespace.iter().collect();
         namespaces_ordered.sort_by(|a, b| {
-            let mut byteSizeA = 0usize;
+            let mut byte_size_a = 0usize;
             for k in a.1 {
-                byteSizeA += k.byteSize;
+                byte_size_a += k.byte_size;
             }
 
             let mut byteSizeB = 0usize;
             for k in b.1 {
-                byteSizeB += k.byteSize;
+                byteSizeB += k.byte_size;
             }
             
-            if byteSizeA == byteSizeB {
+            if byte_size_a == byteSizeB {
                 return std::cmp::Ordering::Equal;
             }
 
-            if byteSizeA > byteSizeB {
+            if byte_size_a > byteSizeB {
                 return std::cmp::Ordering::Greater;
             }
 
@@ -296,7 +341,7 @@ impl Opts {
         for tuple in namespaces_ordered {
             let mut byteSize = 0usize;
             for k in tuple.1 {
-                byteSize += k.byteSize;
+                byteSize += k.byte_size;
             }
 
             println!("'{}' functions: {} ({} bytes)", tuple.0, tuple.1.len(), byteSize);

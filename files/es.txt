@@ -1,0 +1,21 @@
+  types                                  |        0xb -     0x10e2 |      4311 bytes | 398 count
+  imports                                |     0x10e5 -     0x4aad |     14792 bytes | 475 count
+  functions                              |     0x4ab1 -    0x184e2 |     80433 bytes | 80083 count
+  tables                                 |    0x184e4 -    0x184ed |         9 bytes | 1 count
+  memories                               |    0x184ef -    0x184f0 |         1 bytes | 0 count
+  globals                                |    0x184f2 -    0x1853d |        75 bytes | 14 count
+  exports                                |    0x18540 -    0x18a1d |      1245 bytes | 56 count
+  start                                  |    0x18a1f -    0x18a21 |         2 bytes | 1 count
+  elements                               |    0x18a25 -    0x38df3 |    132046 bytes | 1 count
+  data count                             |    0x38df5 -    0x38df7 |         2 bytes | 1 count
+  code                                   |    0x38dfc -  0x12f6983 |  19651463 bytes | 80083 count
+  data                                   |  0x12f6987 -  0x141787c |   1183477 bytes | 246 count
+  custom "name"                          |  0x1417886 -  0x201b5f7 |  12598641 bytes | 1 count
+  custom ".debug_info"                   |  0x201b607 -  0x219d7c7 |   1581504 bytes | 1 count
+  custom ".debug_loc"                    |  0x219d7d6 -  0x221096c |    471446 bytes | 1 count
+  custom ".debug_ranges"                 |  0x221097e -  0x2223ece |     79184 bytes | 1 count
+  custom ".debug_abbrev"                 |  0x2223ee0 -  0x2241fd1 |    123121 bytes | 1 count
+  custom ".debug_line"                   |  0x2241fe1 -  0x22df47b |    644250 bytes | 1 count
+  custom ".debug_str"                    |  0x22df48a -  0x239e75e |    783060 bytes | 1 count
+  custom "build_id"                      |  0x239e769 -  0x239e779 |        16 bytes | 1 count
+  custom "external_debug_info"           |  0x239e78f -  0x239e7a0 |        17 bytes | 1 count
