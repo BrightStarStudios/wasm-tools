@@ -32,10 +32,10 @@ impl Opts {
         };
         printer.indices.push(IndexSpace::default());
 
-        let mut functionInfo = Vec::new();
+        let mut function_info = Vec::new();
         // let mut functionInfoMap = HashMap::new();
-        let mut functionNamesMap = HashMap::new();
-        let mut typesNameMap = HashMap::new();
+        let mut function_names_map = HashMap::new();
+        let mut type_names_map = HashMap::new();
         let mut code_section_counter = 0;
 
         for payload in Parser::new(0).parse_all(&input) {
@@ -55,13 +55,13 @@ impl Opts {
                     println!("Function section. Has: {} count", s.get_count());
                     for _ in 0..s.get_count() {
                         let id = s.read()?;
-                        functionInfo.push(FunctionInfo{ id: id, callCount: 0, byteSize: 0 });
+                        function_info.push(FunctionInfo{ id: id, callCount: 0, byteSize: 0 });
                     }
                     if !s.eof() {
                         bail!("too many bytes in section");
                     }
 
-                    println!("Unique func signatures: {} - Duplicate function signatures {}", functionInfo.len(), already_owned_count);
+                    println!("Unique func signatures: {} - Duplicate function signatures {}", function_info.len(), already_owned_count);
 
                     printer.section(s, "functions")?
                 },
@@ -109,7 +109,7 @@ impl Opts {
                     printer.section_raw(range, count, "code")?
                 }
                 CodeSectionEntry(mut s) => {
-                    functionInfo[code_section_counter].byteSize = s.range().end - s.range().start;
+                    function_info[code_section_counter].byteSize = s.range().end - s.range().start;
                     code_section_counter += 1;
                 }
 
@@ -161,11 +161,11 @@ impl Opts {
                                 wasmparser::Name::Function(mut n) => {
                                     for _ in 0..n.get_count() {
                                         let item = n.read()?;
-                                        if functionNamesMap.contains_key(&item.index) {
+                                        if function_names_map.contains_key(&item.index) {
                                             bail!("function name already in lookup");
                                         }
 
-                                        functionNamesMap.insert(item.index, item.name);
+                                        function_names_map.insert(item.index, item.name);
                                     }
                                     if !n.eof() {
                                         bail!("too many bytes in section");
@@ -180,11 +180,11 @@ impl Opts {
                                 wasmparser::Name::Type(mut n) => {
                                     for _ in 0..n.get_count() {
                                         let item = n.read()?;
-                                        if typesNameMap.contains_key(&item.index) {
+                                        if type_names_map.contains_key(&item.index) {
                                             bail!("type name already in lookup");
                                         }
 
-                                        typesNameMap.insert(item.index, item.name);
+                                        type_names_map.insert(item.index, item.name);
                                     }
                                     if !n.eof() {
                                         bail!("too many bytes in section");
@@ -233,17 +233,26 @@ impl Opts {
         let mut funcs_by_namespace = HashMap::new();
         funcs_by_namespace.insert("non_namespaced", Vec::new());
 
-        let namespace_reg = Regex::new(r"(?:\s?)([a-zA-Z0-9-_]+)(?:::)+?").expect("regex failed to compile");
-        for index in 0..functionInfo.len() {
+        // let recognized_namespace = ["entt", "es", "std", "physx", "draco", "spdlog"];
+        
+        let namespace_reg = Regex::new(r"(?:\s)((?:[a-z0-9-_]+)(?:::)?(?:[a-z0-9-_]+))").expect("regex failed to compile");
+        for index in 0..function_info.len() {
             let index_u32 = index as u32;
-            let info = functionInfo[index];
-            let name = functionNamesMap.get(&index_u32).expect("Couldn't find key in name");
+            let info = function_info[index];
+            let name = function_names_map.get(&index_u32).expect("Couldn't find key in name");
             
             let captures_a = namespace_reg.captures(name);
             match captures_a {
                 Some(captures) => {
-                    let namespace = captures.get(1).unwrap().as_str();
-    
+                    
+                    let mut namespace = captures.get(1).unwrap().as_str();
+                    namespace = namespace.trim();
+                    
+                    if namespace.starts_with("es::") == false {
+                        let mut splitNamespace = namespace.split("::");
+                        namespace = splitNamespace.next().unwrap(); // If it's not es:: then just go 1 layer deep
+                    }
+
                     if funcs_by_namespace.contains_key(namespace) {
                         let v : &mut Vec<FunctionInfo> = funcs_by_namespace.get_mut(namespace).unwrap();
                         v.push(info);
